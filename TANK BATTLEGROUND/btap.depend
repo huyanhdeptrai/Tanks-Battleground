@@ -1,0 +1,141 @@
+# depslib dependency file v1.0
+1743118048 source:c:\users\huy anh\documents\btap\main.cpp
+	"game.h"
+
+1743114370 source:c:\users\huy anh\documents\btap\check.cpp
+	<SDL.h>
+	<SDL_image.h>
+	<cmath>
+	<iostream>
+	<vector>
+	<algorithm>
+	<cstdlib>
+	<ctime>
+
+1743123645 c:\users\huy anh\documents\btap\game.h
+	<SDL.h>
+	<SDL_image.h>
+	<SDL_mixer.h>
+	<SDL_ttf.h>
+	<cmath>
+	<iostream>
+	<vector>
+	<algorithm>
+	<cstdlib>
+	<ctime>
+
+1743124187 source:c:\users\huy anh\documents\btap\game.cpp
+	"game.h"
+
+1743124187 source:c:\users\huy anh\documents\btap survival\game.cpp
+	"game.h"
+
+1743123645 c:\users\huy anh\documents\btap survival\game.h
+	<SDL.h>
+	<SDL_image.h>
+	<SDL_mixer.h>
+	<SDL_ttf.h>
+	<cmath>
+	<iostream>
+	<vector>
+	<algorithm>
+	<cstdlib>
+	<ctime>
+
+1743118048 source:c:\users\huy anh\documents\btap survival\main.cpp
+	"game.h"
+
+1743365736 source:c:\users\huy anh\documents\btap classic mode\game.cpp
+	"game.h"
+	<memory>
+	<algorithm>
+
+1743365688 c:\users\huy anh\documents\btap classic mode\game.h
+	<SDL.h>
+	<SDL_image.h>
+	<SDL_mixer.h>
+	<SDL_ttf.h>
+	<cmath>
+	<iostream>
+	<vector>
+	<algorithm>
+	<cstdlib>
+	<ctime>
+	<memory>
+
+1743353025 source:c:\users\huy anh\documents\btap classic mode\main.cpp
+	"game.h"
+
+1743392129 source:c:\users\huy anh\documents\ltnc\game.cpp
+	"game.h"
+	<iostream>
+
+1743394669 c:\users\huy anh\documents\ltnc\game.h
+	<SDL.h>
+	<SDL_ttf.h>
+	<SDL_image.h>
+	<SDL_mixer.h>
+	<string>
+	"campaign_game.h"
+	"survival_game.h"
+
+1743392609 source:c:\users\huy anh\documents\ltnc\main.cpp
+	"game.h"
+
+1743389609 source:c:\users\huy anh\documents\ltnc\campaign_mode.cpp
+
+1743392897 c:\users\huy anh\documents\ltnc\campaign_game.h
+	<SDL.h>
+	<SDL_image.h>
+	<SDL_mixer.h>
+	<SDL_ttf.h>
+	<vector>
+	<memory>
+	<algorithm>
+	<cmath>
+	<iostream>
+
+1743395196 source:c:\users\huy anh\documents\ltnc\campaign_game.cpp
+	"campaign_game.h"
+
+1743395242 c:\users\huy anh\documents\ltnc\survival_game.h
+	<SDL.h>
+	<SDL_image.h>
+	<SDL_mixer.h>
+	<SDL_ttf.h>
+	<cmath>
+	<iostream>
+	<vector>
+	<algorithm>
+	<cstdlib>
+	<ctime>
+
+1743395196 source:c:\users\huy anh\documents\ltnc - copy\campaign_game.cpp
+	"campaign_game.h"
+
+1743392897 c:\users\huy anh\documents\ltnc - copy\campaign_game.h
+	<SDL.h>
+	<SDL_image.h>
+	<SDL_mixer.h>
+	<SDL_ttf.h>
+	<vector>
+	<memory>
+	<algorithm>
+	<cmath>
+	<iostream>
+
+1743392609 source:c:\users\huy anh\documents\ltnc - copy\main.cpp
+	"game.h"
+
+1743396010 c:\users\huy anh\documents\ltnc - copy\game.h
+	<SDL.h>
+	<SDL_ttf.h>
+	<SDL_image.h>
+	<SDL_mixer.h>
+	<string>
+	"campaign_game.h"
+
+1743396194 source:c:\users\huy anh\documents\ltnc - copy\game.cpp
+	"game.h"
+	<iostream>
+
