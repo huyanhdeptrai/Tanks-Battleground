@@ -36,7 +36,7 @@ CampaignGame::CampaignGame(SDL_Renderer* rend, TTF_Font* fnt)
       portalStartTexture(nullptr), portalEndTexture(nullptr), bossTexture(nullptr), isPaused(false),
       highScore(0), showGameOverScreen(false), endGameTime(0), gameOverBackgroundTexture(nullptr),
       backgroundMusic(nullptr), pauseTexture(nullptr), menuButtonTexture(nullptr),
-      musicVolume(64), sfxVolume(64),
+      musicVolume(80), sfxVolume(80),
       musicSlider{SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 - 40, 300, 30},
       sfxSlider{SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 + 40, 300, 30},
       isDraggingMusic(false), isDraggingSFX(false),
@@ -128,6 +128,7 @@ void CampaignGame::loadResources() {
     bossTexture = loadTexture("images/CampaignMode/boss.png");
     gameOverBackgroundTexture = loadTexture("images/CampaignMode/gameover_background.png");
     pauseTexture = loadTexture("images/CampaignMode/pause.png");
+    menuButtonTexture = loadTexture("images/CampaignMode/menu_button.png");
 
     player1Info.avatar = loadTexture("images/CampaignMode/player1_avatar.png");
     player2Info.avatar = loadTexture("images/CampaignMode/player2_avatar.png");
@@ -138,10 +139,13 @@ void CampaignGame::loadResources() {
     playerDeathSound = Mix_LoadWAV("audio/playerdeath.wav");
     spawnSound = Mix_LoadWAV("audio/spawn.wav");
 
-    backgroundMusic = Mix_LoadMUS("audio/CampaignMode.mp3");
-    if (backgroundMusic) {
+backgroundMusic = Mix_LoadMUS("audio/CampaignMode.mp3");
+    if (!backgroundMusic) {
+        std::cerr << "Failed to load background music! SDL_mixer Error: " << Mix_GetError() << std::endl;
+    } else {
         Mix_VolumeMusic(musicVolume);
         Mix_PlayMusic(backgroundMusic, -1);
+        std::cout << "Background music loaded and playing, volume: " << musicVolume << std::endl;
     }
 
     Mix_VolumeChunk(enemyDeathSound, sfxVolume);
@@ -588,7 +592,22 @@ void CampaignGame::HandleInput() {
     int mouseX, mouseY;
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) running = false;
-        if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_p) isPaused = !isPaused;
+
+        if (e.type == SDL_KEYDOWN) {
+            if (e.key.keysym.sym == SDLK_p) {
+                isPaused = !isPaused;
+                if (isPaused) {
+                    Mix_PauseMusic();
+                } else {
+                    Mix_ResumeMusic();
+                }
+            }
+            // Exit pause with ESC
+            if (isPaused && e.key.keysym.sym == SDLK_ESCAPE) {
+                isPaused = false;
+                Mix_ResumeMusic();
+            }
+        }
 
         if (isPaused) {
             if (e.type == SDL_MOUSEBUTTONDOWN) {
@@ -616,13 +635,17 @@ void CampaignGame::HandleInput() {
                     musicVolume = ((mouseX - musicSlider.x) * 128) / musicSlider.w;
                     musicVolume = std::max(0, std::min(128, musicVolume));
                     Mix_VolumeMusic(musicVolume);
+                    // Lưu cài đặt âm lượng
                 }
+
                 if (isDraggingSFX) {
                     sfxVolume = ((mouseX - sfxSlider.x) * 128) / sfxSlider.w;
                     sfxVolume = std::max(0, std::min(128, sfxVolume));
+                    // Cập nhật âm lượng cho tất cả hiệu ứng âm thanh
                     Mix_VolumeChunk(enemyDeathSound, sfxVolume);
                     Mix_VolumeChunk(playerDeathSound, sfxVolume);
                     Mix_VolumeChunk(spawnSound, sfxVolume);
+                    // Lưu cài đặt âm lượng
                 }
             }
         }
@@ -1032,6 +1055,19 @@ void CampaignGame::Render() {
         if (isPaused) {
             SDL_Rect pauseRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
             SDL_RenderCopy(renderer, pauseTexture, NULL, &pauseRect);
+
+            // Thêm viền cho slider
+SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+SDL_RenderDrawRect(renderer, &musicSlider);
+SDL_RenderDrawRect(renderer, &sfxSlider);
+
+// Thêm text "PAUSED"
+SDL_Color red = {255, 0, 0, 255};
+std::string pausedText = "PAUSED";
+SDL_Surface* pausedSurface = TTF_RenderText_Solid(font, pausedText.c_str(), red);
+SDL_Texture* pausedTexture = SDL_CreateTextureFromSurface(renderer, pausedSurface);
+SDL_Rect pausedRect = {SCREEN_WIDTH/2 - pausedSurface->w/2, musicSlider.y - 100, pausedSurface->w, pausedSurface->h};
+SDL_RenderCopy(renderer, pausedTexture, NULL, &pausedRect);
 
             SDL_Color white = {255, 255, 255, 255};
             std::string musicText = "Music Volume";

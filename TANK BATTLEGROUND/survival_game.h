@@ -22,6 +22,7 @@ public:
     void Update();
     void Render();
     bool IsRunning() const { return isRunning; }
+    void Run();
 
 private:
     // Các hằng số game
@@ -43,13 +44,14 @@ private:
     static const int AVATAR_SIZE = 50;
     static const int HEART_SIZE = 30;
     static const int UI_MARGIN = 10;
-    static const int MIN_SPAWN_RATE = 2000;
+    static const int MIN_SPAWN_RATE;
     static const int MAX_BULLETS = 5;
     static const float RELOAD_TIME;
     static const int INVINCIBLE_DURATION = 3000;
     static const int SHIELD_SIZE = 80;
     static const int BUTTON_WIDTH = 100;
     static const int BUTTON_HEIGHT = 50;
+
 
     struct Player {
         float x, y;
@@ -173,6 +175,7 @@ private:
     void HandleGameOverInput();
     void RenderGameOverScreen();
     void ResetGame();
+    void Cleanup();
 };
 
 #endif // SURVIVAL_GAME_H

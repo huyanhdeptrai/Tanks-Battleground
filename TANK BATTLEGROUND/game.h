@@ -7,6 +7,7 @@
 #include <SDL_mixer.h>
 #include <string>
 #include "campaign_game.h"  // Thêm include này
+#include "survival_game.h"
 
 class Game {
 public:
@@ -23,7 +24,8 @@ private:
         OPTIONS,
         MODE_SELECTION,
         HELP,
-        CAMPAIGN_GAME  // Thêm trạng thái mới cho campaign game
+        CAMPAIGN_GAME,  // Thêm trạng thái mới cho campaign game
+        SURVIVAL_GAME
     };
 
     void HandleEvents();

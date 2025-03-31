@@ -1,114 +1,156 @@
 #include "survival_game.h"
 
+const int SurvivalGame::MIN_SPAWN_RATE = 2000;
 const float SurvivalGame::RELOAD_TIME = 1500.0f;
 
 SurvivalGame::SurvivalGame(SDL_Renderer* renderer, TTF_Font* font)
     : renderer(renderer), font(font), isRunning(false),
       player1(PLAY_AREA_MIN_X + PLAYER_OFFSET, SCREEN_HEIGHT / 2, 0),
-      player2(PLAY_AREA_MAX_X - PLAYER_WIDTH - PLAYER_OFFSET, SCREEN_HEIGHT / 2, 180) {
-
-    // Initialize variables
-    startTime = 0;
-    lastFireTime1 = 0;
-    lastFireTime2 = 0;
-    lastSpawnTime = 0;
-    spawnRate = 5000;
-    player1InvincibleStart = 0;
-    player2InvincibleStart = 0;
-    player1IsInvincible = false;
-    player2IsInvincible = false;
-    isPaused = false;
-    highScore = 0;
-    showGameOverScreen = false;
-    endGameTime = 0;
-    musicVolume = 64;
-    sfxVolume = 64;
-    isDraggingMusic = false;
-    isDraggingSFX = false;
-
-    musicSlider = {SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 - 40, 300, 30};
-    sfxSlider = {SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 + 40, 300, 30};
-    menuButtonRect = {0, 0, 0, 0};
-
-    player1BulletInfo = {MAX_BULLETS, 0.0f, std::vector<bool>(MAX_BULLETS, true), nullptr};
-    player2BulletInfo = {MAX_BULLETS, 0.0f, std::vector<bool>(MAX_BULLETS, true), nullptr};
-    player1Info = {MAX_LIVES, 0, nullptr, nullptr};
-    player2Info = {MAX_LIVES, 0, nullptr, nullptr};
-}
+      player2(PLAY_AREA_MAX_X - PLAYER_WIDTH - PLAYER_OFFSET, SCREEN_HEIGHT / 2, 180),
+      startTime(0), lastFireTime1(0), lastFireTime2(0), lastSpawnTime(0), spawnRate(5000),
+      player1InvincibleStart(0), player2InvincibleStart(0), player1IsInvincible(false),
+      player2IsInvincible(false), isPaused(false), highScore(0), showGameOverScreen(false),
+      endGameTime(0), musicVolume(64), sfxVolume(64), isDraggingMusic(false), isDraggingSFX(false),
+      musicSlider{SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 - 40, 300, 30},
+      sfxSlider{SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 + 40, 300, 30},
+      menuButtonRect{0, 0, 0, 0},
+      playerTexture(nullptr), player2Texture(nullptr), bulletTexture(nullptr),
+      backgroundTexture(nullptr), grassTexture(nullptr), enemyTexture(nullptr),
+      boomTexture(nullptr), afterBoomTexture(nullptr), shieldTexture(nullptr),
+      gameOverBackgroundTexture(nullptr), pauseTexture(nullptr), menuButtonTexture(nullptr),
+      enemyDeathSound(nullptr), playerDeathSound(nullptr), spawnSound(nullptr),
+      backgroundMusic(nullptr),
+      player1BulletInfo{MAX_BULLETS, 0.0f, std::vector<bool>(MAX_BULLETS, true), nullptr},
+      player2BulletInfo{MAX_BULLETS, 0.0f, std::vector<bool>(MAX_BULLETS, true), nullptr},
+      player1Info{MAX_LIVES, 0, nullptr, nullptr},
+      player2Info{MAX_LIVES, 0, nullptr, nullptr} {}
 
 SurvivalGame::~SurvivalGame() {
     Cleanup();
+    bullets.clear();
+    enemies.clear();
+    explosions.clear();
+    afterBoomMarks.clear();
 }
 
 bool SurvivalGame::Initialize() {
-    // Load textures
-    playerTexture = LoadTexture("survival/player1.png");
-    player2Texture = LoadTexture("survival/player2.png");
-    backgroundTexture = LoadTexture("survival/background.png");
-    grassTexture = LoadTexture("survival/grass.png");
-    enemyTexture = LoadTexture("survival/enemy.png");
-    boomTexture = LoadTexture("survival/boom.png");
-    afterBoomTexture = LoadTexture("survival/afterboom.png");
-    bulletTexture = LoadTexture("survival/bullet.png");
-    shieldTexture = LoadTexture("survival/shield.png");
-    gameOverBackgroundTexture = LoadTexture("survival/gameover_background.png");
-    pauseTexture = LoadTexture("survival/pause.png");
-    menuButtonTexture = LoadTexture("survival/menu_button.png");
+    std::cerr << "Starting initialization..." << std::endl;
 
-    player1BulletInfo.bulletIcon = LoadTexture("survival/bullet_icon.png");
+    // Tải các texture
+    playerTexture = LoadTexture("images/survivalmode/player1.png");
+    if (!playerTexture) std::cerr << "Warning: Failed to load player1.png" << std::endl;
+
+    player2Texture = LoadTexture("images/survivalmode/player2.png");
+    if (!player2Texture) std::cerr << "Warning: Failed to load player2.png" << std::endl;
+
+    backgroundTexture = LoadTexture("images/survivalmode/background.png");
+    if (!backgroundTexture) std::cerr << "Warning: Failed to load background.png" << std::endl;
+
+    grassTexture = LoadTexture("images/survivalmode/grass.png");
+    if (!grassTexture) std::cerr << "Warning: Failed to load grass.png" << std::endl;
+
+    enemyTexture = LoadTexture("images/survivalmode/enemy.png");
+    if (!enemyTexture) std::cerr << "Warning: Failed to load enemy.png" << std::endl;
+
+    boomTexture = LoadTexture("images/survivalmode/boom.png");
+    if (!boomTexture) std::cerr << "Warning: Failed to load boom.png" << std::endl;
+
+    afterBoomTexture = LoadTexture("images/survivalmode/afterboom.png");
+    if (!afterBoomTexture) std::cerr << "Warning: Failed to load afterboom.png" << std::endl;
+
+    bulletTexture = LoadTexture("images/survivalmode/bullet.png");
+    if (!bulletTexture) std::cerr << "Warning: Failed to load bullet.png" << std::endl;
+
+    shieldTexture = LoadTexture("images/survivalmode/shield.png");
+    if (!shieldTexture) std::cerr << "Warning: Failed to load shield.png" << std::endl;
+
+    gameOverBackgroundTexture = LoadTexture("images/survivalmode/gameover_background.png");
+    if (!gameOverBackgroundTexture) std::cerr << "Warning: Failed to load gameover_background.png" << std::endl;
+
+    pauseTexture = LoadTexture("images/survivalmode/pause.png");
+    if (!pauseTexture) std::cerr << "Warning: Failed to load pause.png" << std::endl;
+
+    menuButtonTexture = LoadTexture("images/survivalmode/menu_button.png"); // Thêm dòng này
+    if (!menuButtonTexture) std::cerr << "Warning: Failed to load menu_button.png" << std::endl;
+
+    player1BulletInfo.bulletIcon = LoadTexture("images/survivalmode/bullet_icon.png");
+    if (!player1BulletInfo.bulletIcon) std::cerr << "Warning: Failed to load bullet_icon.png" << std::endl;
     player2BulletInfo.bulletIcon = player1BulletInfo.bulletIcon;
-    player1Info.avatar = LoadTexture("survival/player1_avatar.png");
-    player2Info.avatar = LoadTexture("survival/player2_avatar.png");
-    player1Info.heartTexture = LoadTexture("survival/heart.png");
+
+    player1Info.avatar = LoadTexture("images/survivalmode/player1_avatar.png");
+    if (!player1Info.avatar) std::cerr << "Warning: Failed to load player1_avatar.png" << std::endl;
+
+    player2Info.avatar = LoadTexture("images/survivalmode/player2_avatar.png");
+    if (!player2Info.avatar) std::cerr << "Warning: Failed to load player2_avatar.png" << std::endl;
+
+    player1Info.heartTexture = LoadTexture("images/survivalmode/heart.png");
+    if (!player1Info.heartTexture) std::cerr << "Warning: Failed to load heart.png" << std::endl;
     player2Info.heartTexture = player1Info.heartTexture;
 
-    // Load sounds
+    // Tải âm thanh
     enemyDeathSound = LoadSound("audio/enemydeath.wav");
+    if (!enemyDeathSound) std::cerr << "Warning: Failed to load enemydeath.wav" << std::endl;
+
     playerDeathSound = LoadSound("audio/playerdeath.wav");
+    if (!playerDeathSound) std::cerr << "Warning: Failed to load playerdeath.wav" << std::endl;
+
     spawnSound = LoadSound("audio/spawn.wav");
-    backgroundMusic = Mix_LoadMUS("audio/CampaignMode.mp3");
+    if (!spawnSound) std::cerr << "Warning: Failed to load spawn.wav" << std::endl;
 
-    if (!playerTexture || !player2Texture || !backgroundTexture || !enemyTexture ||
-        !boomTexture || !afterBoomTexture || !bulletTexture || !shieldTexture ||
-        !gameOverBackgroundTexture || !pauseTexture || !menuButtonTexture) {
-        std::cerr << "Failed to load some textures!" << std::endl;
+backgroundMusic = Mix_LoadMUS("audio/CampaignMode.mp3");
+if (!backgroundMusic) std::cerr << "Warning: Failed to load CampaignMode.mp3" << std::endl;
+
+
+    // Kiểm tra các tài nguyên quan trọng
+    if (!playerTexture || !player2Texture || !backgroundTexture) {
+        std::cerr << "Failed to load critical textures! Initialization aborted." << std::endl;
         return false;
     }
 
-    if (!enemyDeathSound || !playerDeathSound || !spawnSound || !backgroundMusic) {
-        std::cerr << "Failed to load some sounds!" << std::endl;
-        return false;
+    // Thiết lập âm thanh
+    if (backgroundMusic) {
+        Mix_VolumeMusic(musicVolume);
+        Mix_PlayMusic(backgroundMusic, -1);
     }
-
-    Mix_VolumeMusic(musicVolume);
-    Mix_PlayMusic(backgroundMusic, -1);
-    Mix_VolumeChunk(enemyDeathSound, sfxVolume);
-    Mix_VolumeChunk(playerDeathSound, sfxVolume);
-    Mix_VolumeChunk(spawnSound, sfxVolume);
+    if (enemyDeathSound) Mix_VolumeChunk(enemyDeathSound, sfxVolume);
+    if (playerDeathSound) Mix_VolumeChunk(playerDeathSound, sfxVolume);
+    if (spawnSound) Mix_VolumeChunk(spawnSound, sfxVolume);
 
     startTime = SDL_GetTicks();
     isRunning = true;
+    std::cerr << "Initialization completed!" << std::endl;
     return true;
 }
 
 SDL_Texture* SurvivalGame::LoadTexture(const char* path) {
-    SDL_Texture* newTexture = nullptr;
     SDL_Surface* loadedSurface = IMG_Load(path);
     if (!loadedSurface) {
         std::cerr << "Unable to load image " << path << "! SDL_image Error: " << IMG_GetError() << std::endl;
         return nullptr;
     }
-    newTexture = SDL_CreateTextureFromSurface(renderer, loadedSurface);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, loadedSurface);
     SDL_FreeSurface(loadedSurface);
-    return newTexture;
+    if (!texture) {
+        std::cerr << "Failed to create texture from " << path << "! SDL Error: " << SDL_GetError() << std::endl;
+    }
+    return texture;
 }
 
 Mix_Chunk* SurvivalGame::LoadSound(const std::string& filePath) {
     Mix_Chunk* sound = Mix_LoadWAV(filePath.c_str());
     if (!sound) {
-        std::cerr << "Failed to load sound effect! Error: " << Mix_GetError() << std::endl;
+        std::cerr << "Failed to load sound " << filePath << "! SDL_mixer Error: " << Mix_GetError() << std::endl;
     }
     return sound;
+}
+
+void SurvivalGame::Run() {
+    while (isRunning) {
+        HandleInput();
+        Update();
+        Render();
+        SDL_Delay(16); // ~60 FPS
+    }
 }
 
 void SurvivalGame::HandleInput() {
@@ -233,14 +275,21 @@ void SurvivalGame::HandleInput() {
                 player2BulletInfo.reloadTimer = RELOAD_TIME;
             }
         }
-    }
-    else if (showGameOverScreen) {
+    } else if (showGameOverScreen) {
         HandleGameOverInput();
     }
 }
 
 void SurvivalGame::Update() {
     if (isPaused || showGameOverScreen) return;
+
+    if (!player1.isAlive && !player2.isAlive && !showGameOverScreen) {
+        endGameTime = SDL_GetTicks() - startTime;
+        showGameOverScreen = true;
+        int totalScore = player1Info.score + player2Info.score;
+        highScore = std::max(highScore, totalScore);
+        return;
+    }
 
     if (player1IsInvincible && !IsPlayerInvincible(player1InvincibleStart)) {
         player1IsInvincible = false;
@@ -255,6 +304,7 @@ void SurvivalGame::Update() {
     lastTime = currentTime;
 
     UpdateBulletSystem(deltaTime);
+    UpdateBullets();
     UpdateEnemies();
     CheckBulletCollisions();
     CheckEnemyPlayerCollision();
@@ -268,17 +318,14 @@ void SurvivalGame::Render() {
     if (showGameOverScreen) {
         RenderGameOverScreen();
     } else {
-        // Render background
         SDL_Rect backgroundRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
         SDL_RenderCopy(renderer, backgroundTexture, nullptr, &backgroundRect);
 
-        // Render after boom marks
         for (const auto& mark : afterBoomMarks) {
             SDL_Rect markRect = {static_cast<int>(mark.x - 30), static_cast<int>(mark.y - 30), 60, 60};
             SDL_RenderCopy(renderer, afterBoomTexture, nullptr, &markRect);
         }
 
-        // Render bullets
         for (const auto& bullet : bullets) {
             SDL_Rect bulletRect = {
                 static_cast<int>(bullet.x - BULLET_SIZE/2),
@@ -291,7 +338,6 @@ void SurvivalGame::Render() {
             }
         }
 
-        // Render explosions
         for (const auto& explosion : explosions) {
             SDL_Rect explosionRect = {
                 static_cast<int>(explosion.x - 50),
@@ -301,7 +347,6 @@ void SurvivalGame::Render() {
             SDL_RenderCopy(renderer, boomTexture, nullptr, &explosionRect);
         }
 
-        // Render player 1
         if (player1.isAlive) {
             SDL_Rect destRect1 = {
                 static_cast<int>(player1.x),
@@ -312,7 +357,6 @@ void SurvivalGame::Render() {
             RenderShieldEffect(player1.x, player1.y, player1InvincibleStart);
         }
 
-        // Render player 2
         if (player2.isAlive) {
             SDL_Rect destRect2 = {
                 static_cast<int>(player2.x),
@@ -323,7 +367,6 @@ void SurvivalGame::Render() {
             RenderShieldEffect(player2.x, player2.y, player2InvincibleStart);
         }
 
-        // Render enemies
         for (const auto& enemy : enemies) {
             SDL_Rect enemyRect = {
                 static_cast<int>(enemy.x),
@@ -333,21 +376,17 @@ void SurvivalGame::Render() {
             SDL_RenderCopy(renderer, enemyTexture, nullptr, &enemyRect);
         }
 
-        // Render grass
         SDL_Rect grassRect = {SCREEN_WIDTH / 2 - 75, SCREEN_HEIGHT / 2 - 75, 150, 150};
         SDL_RenderCopy(renderer, grassTexture, nullptr, &grassRect);
 
-        // Render UI
         RenderUI();
 
-        // Render pause menu if paused
         if (isPaused) {
             SDL_Rect pauseRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
             SDL_RenderCopy(renderer, pauseTexture, nullptr, &pauseRect);
 
             SDL_Color white = {255, 255, 255, 255};
 
-            // Render music volume slider
             std::string musicText = "Music Volume";
             SDL_Surface* musicSurface = TTF_RenderText_Solid(font, musicText.c_str(), white);
             SDL_Texture* musicTexture = SDL_CreateTextureFromSurface(renderer, musicSurface);
@@ -369,7 +408,6 @@ void SurvivalGame::Render() {
             SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
             SDL_RenderFillRect(renderer, &musicFill);
 
-            // Render SFX volume slider
             std::string sfxText = "SFX Volume";
             SDL_Surface* sfxSurface = TTF_RenderText_Solid(font, sfxText.c_str(), white);
             SDL_Texture* sfxTexture = SDL_CreateTextureFromSurface(renderer, sfxSurface);
@@ -391,7 +429,6 @@ void SurvivalGame::Render() {
             SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
             SDL_RenderFillRect(renderer, &sfxFill);
 
-            // Render menu button
             menuButtonRect = {
                 SCREEN_WIDTH / 2 - BUTTON_WIDTH / 2,
                 sfxSlider.y + sfxSlider.h + 50,
@@ -399,7 +436,6 @@ void SurvivalGame::Render() {
             };
             SDL_RenderCopy(renderer, menuButtonTexture, nullptr, &menuButtonRect);
 
-            // Clean up surfaces and textures
             SDL_FreeSurface(musicSurface);
             SDL_DestroyTexture(musicTexture);
             SDL_FreeSurface(sfxSurface);
@@ -416,7 +452,6 @@ void SurvivalGame::SpawnEnemy() {
         enemies.emplace_back(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
         lastSpawnTime = currentTime;
         Mix_PlayChannel(-1, spawnSound, 0);
-
         spawnRate = std::max(MIN_SPAWN_RATE, spawnRate - 200);
     }
 }
@@ -485,13 +520,10 @@ void SurvivalGame::CheckBulletCollisions() {
             if (distance < (BULLET_SIZE/2 + ENEMY_SIZE/2)) {
                 Mix_PlayChannel(-1, enemyDeathSound, 0);
 
-                bool isPlayer1Bullet = false;
                 float angleDiff1 = fabs(bulletIt->angle - (player1.angle * M_PI / 180.0));
                 float angleDiff2 = fabs(bulletIt->angle - (player2.angle * M_PI / 180.0));
-
                 if (angleDiff1 < angleDiff2 && player1.isAlive) {
                     player1Info.score += 10;
-                    isPlayer1Bullet = true;
                 } else if (player2.isAlive) {
                     player2Info.score += 10;
                 }
@@ -538,86 +570,73 @@ void SurvivalGame::RenderUI() {
     const int BULLET_MARGIN = 5;
     const int UI_TOP_OFFSET = 5;
 
-    // Player 1 UI
     SDL_Rect avatar1Rect = {UI_MARGIN, UI_TOP_OFFSET, AVATAR_SIZE, AVATAR_SIZE};
-    SDL_RenderCopy(renderer, player1Info.avatar, NULL, &avatar1Rect);
+    SDL_RenderCopy(renderer, player1Info.avatar, nullptr, &avatar1Rect);
 
     int rightOfAvatarX = UI_MARGIN + AVATAR_SIZE + UI_ELEMENT_SPACING;
 
-    // Player 1 lives
     for (int i = 0; i < player1Info.lives; i++) {
         SDL_Rect heartRect = {
             rightOfAvatarX + i * (HEART_SIZE + UI_ELEMENT_SPACING),
             UI_TOP_OFFSET + (AVATAR_SIZE - HEART_SIZE) / 2,
-            HEART_SIZE,
-            HEART_SIZE
+            HEART_SIZE, HEART_SIZE
         };
-        SDL_RenderCopy(renderer, player1Info.heartTexture, NULL, &heartRect);
+        SDL_RenderCopy(renderer, player1Info.heartTexture, nullptr, &heartRect);
     }
 
-    // Player 1 score
     int score1Y = UI_TOP_OFFSET + AVATAR_SIZE - HEART_SIZE + UI_ELEMENT_SPACING - 3;
     std::string score1Text = "Score: " + std::to_string(player1Info.score);
     SDL_Surface* score1Surface = TTF_RenderText_Solid(font, score1Text.c_str(), white);
     SDL_Texture* score1Texture = SDL_CreateTextureFromSurface(renderer, score1Surface);
     SDL_Rect score1Rect = {rightOfAvatarX, score1Y, score1Surface->w, score1Surface->h};
-    SDL_RenderCopy(renderer, score1Texture, NULL, &score1Rect);
+    SDL_RenderCopy(renderer, score1Texture, nullptr, &score1Rect);
 
-    // Player 1 bullets
     int bullet1Y = score1Y + score1Surface->h + UI_ELEMENT_SPACING - 3;
     for (int i = 0; i < MAX_BULLETS; i++) {
         if (player1BulletInfo.bulletStates[i]) {
             SDL_Rect bulletRect = {
                 rightOfAvatarX + i * (BULLET_ICON_SIZE + BULLET_MARGIN),
                 bullet1Y,
-                BULLET_ICON_SIZE,
-                BULLET_ICON_SIZE
+                BULLET_ICON_SIZE, BULLET_ICON_SIZE
             };
-            SDL_RenderCopy(renderer, player1BulletInfo.bulletIcon, NULL, &bulletRect);
+            SDL_RenderCopy(renderer, player1BulletInfo.bulletIcon, nullptr, &bulletRect);
         }
     }
 
-    // Player 2 UI
     int player2AvatarX = SCREEN_WIDTH - UI_MARGIN - AVATAR_SIZE;
     SDL_Rect avatar2Rect = {player2AvatarX, UI_TOP_OFFSET, AVATAR_SIZE, AVATAR_SIZE};
-    SDL_RenderCopy(renderer, player2Info.avatar, NULL, &avatar2Rect);
+    SDL_RenderCopy(renderer, player2Info.avatar, nullptr, &avatar2Rect);
 
     int player2UIStartX = player2AvatarX - UI_ELEMENT_SPACING;
 
-    // Player 2 lives
     for (int i = 0; i < player2Info.lives; i++) {
         SDL_Rect heartRect = {
             player2UIStartX - (i + 1) * (HEART_SIZE + UI_ELEMENT_SPACING),
             UI_TOP_OFFSET + (AVATAR_SIZE - HEART_SIZE) / 2,
-            HEART_SIZE,
-            HEART_SIZE
+            HEART_SIZE, HEART_SIZE
         };
-        SDL_RenderCopy(renderer, player2Info.heartTexture, NULL, &heartRect);
+        SDL_RenderCopy(renderer, player2Info.heartTexture, nullptr, &heartRect);
     }
 
-    // Player 2 score
     std::string score2Text = "Score: " + std::to_string(player2Info.score);
     SDL_Surface* score2Surface = TTF_RenderText_Solid(font, score2Text.c_str(), white);
     SDL_Texture* score2Texture = SDL_CreateTextureFromSurface(renderer, score2Surface);
     int score2X = player2UIStartX - score2Surface->w;
     SDL_Rect score2Rect = {score2X, score1Y, score2Surface->w, score2Surface->h};
-    SDL_RenderCopy(renderer, score2Texture, NULL, &score2Rect);
+    SDL_RenderCopy(renderer, score2Texture, nullptr, &score2Rect);
 
-    // Player 2 bullets
     int bullet2Y = score1Y + score2Surface->h + UI_ELEMENT_SPACING - 3;
     for (int i = 0; i < MAX_BULLETS; i++) {
         if (player2BulletInfo.bulletStates[i]) {
             SDL_Rect bulletRect = {
                 player2UIStartX - (i + 1) * (BULLET_ICON_SIZE + BULLET_MARGIN),
                 bullet2Y,
-                BULLET_ICON_SIZE,
-                BULLET_ICON_SIZE
+                BULLET_ICON_SIZE, BULLET_ICON_SIZE
             };
-            SDL_RenderCopy(renderer, player2BulletInfo.bulletIcon, NULL, &bulletRect);
+            SDL_RenderCopy(renderer, player2BulletInfo.bulletIcon, nullptr, &bulletRect);
         }
     }
 
-    // Game timer
     Uint32 currentTime = (SDL_GetTicks() - startTime) / 1000;
     int minutes = currentTime / 60;
     int seconds = currentTime % 60;
@@ -625,9 +644,8 @@ void SurvivalGame::RenderUI() {
     SDL_Surface* timeSurface = TTF_RenderText_Solid(font, timeText.c_str(), white);
     SDL_Texture* timeTexture = SDL_CreateTextureFromSurface(renderer, timeSurface);
     SDL_Rect timeRect = {SCREEN_WIDTH / 2 - timeSurface->w / 2, UI_TOP_OFFSET, timeSurface->w, timeSurface->h};
-    SDL_RenderCopy(renderer, timeTexture, NULL, &timeRect);
+    SDL_RenderCopy(renderer, timeTexture, nullptr, &timeRect);
 
-    // Clean up surfaces and textures
     SDL_FreeSurface(score1Surface);
     SDL_DestroyTexture(score1Texture);
     SDL_FreeSurface(score2Surface);
@@ -641,7 +659,6 @@ void SurvivalGame::CheckEnemyPlayerCollision() {
         for (auto enemyIt = enemies.begin(); enemyIt != enemies.end();) {
             if (std::abs(enemyIt->x - player1.x) < ENEMY_SIZE/2 + PLAYER_WIDTH/2 &&
                 std::abs(enemyIt->y - player1.y) < ENEMY_SIZE/2 + PLAYER_HEIGHT/2) {
-
                 player1Info.lives--;
                 Mix_PlayChannel(-1, playerDeathSound, 0);
                 player1InvincibleStart = SDL_GetTicks();
@@ -666,7 +683,6 @@ void SurvivalGame::CheckEnemyPlayerCollision() {
         for (auto enemyIt = enemies.begin(); enemyIt != enemies.end();) {
             if (std::abs(enemyIt->x - player2.x) < ENEMY_SIZE/2 + PLAYER_WIDTH/2 &&
                 std::abs(enemyIt->y - player2.y) < ENEMY_SIZE/2 + PLAYER_HEIGHT/2) {
-
                 player2Info.lives--;
                 Mix_PlayChannel(-1, playerDeathSound, 0);
                 player2InvincibleStart = SDL_GetTicks();
@@ -730,10 +746,9 @@ void SurvivalGame::RenderShieldEffect(float playerX, float playerY, Uint32 invin
         SDL_Rect shieldRect = {
             static_cast<int>(playerX + PLAYER_WIDTH/2 - SHIELD_SIZE/2),
             static_cast<int>(playerY + PLAYER_HEIGHT/2 - SHIELD_SIZE/2),
-            SHIELD_SIZE,
-            SHIELD_SIZE
+            SHIELD_SIZE, SHIELD_SIZE
         };
-        SDL_RenderCopy(renderer, shieldTexture, NULL, &shieldRect);
+        SDL_RenderCopy(renderer, shieldTexture, nullptr, &shieldRect);
     }
 }
 
@@ -762,7 +777,6 @@ void SurvivalGame::HandleGameOverInput() {
             int menuButtonH = BUTTON_HEIGHT + 30;
 
             if (IsMouseOverButton(mouseX, mouseY, restartButtonX, restartButtonY, restartButtonW, restartButtonH)) {
-                showGameOverScreen = false;
                 ResetGame();
             }
             if (IsMouseOverButton(mouseX, mouseY, menuButtonX, menuButtonY, menuButtonW, menuButtonH)) {
@@ -790,22 +804,21 @@ void SurvivalGame::ResetGame() {
     player1InvincibleStart = 0;
     player2InvincibleStart = 0;
     spawnRate = 5000;
+    showGameOverScreen = false;
 }
 
 void SurvivalGame::RenderGameOverScreen() {
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color yellow = {255, 255, 0, 255};
 
-    // Render background
     SDL_Rect backgroundRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
-    SDL_RenderCopy(renderer, gameOverBackgroundTexture, NULL, &backgroundRect);
+    SDL_RenderCopy(renderer, gameOverBackgroundTexture, nullptr, &backgroundRect);
 
     int totalScore = player1Info.score + player2Info.score;
     Uint32 playTime = endGameTime / 1000;
     int minutes = playTime / 60;
     int seconds = playTime % 60;
 
-    // Render player 1 info
     std::string player1Text = "Player 1";
     SDL_Surface* player1Surface = TTF_RenderText_Solid(font, player1Text.c_str(), white);
     SDL_Texture* player1Texture = SDL_CreateTextureFromSurface(renderer, player1Surface);
@@ -814,7 +827,7 @@ void SurvivalGame::RenderGameOverScreen() {
         SCREEN_HEIGHT / 2 + 12,
         player1Surface->w, player1Surface->h
     };
-    SDL_RenderCopy(renderer, player1Texture, NULL, &player1Rect);
+    SDL_RenderCopy(renderer, player1Texture, nullptr, &player1Rect);
 
     std::string score1Text = "Score: " + std::to_string(player1Info.score);
     SDL_Surface* score1Surface = TTF_RenderText_Solid(font, score1Text.c_str(), white);
@@ -824,9 +837,8 @@ void SurvivalGame::RenderGameOverScreen() {
         player1Rect.y + player1Surface->h - 15,
         score1Surface->w, score1Surface->h
     };
-    SDL_RenderCopy(renderer, score1Texture, NULL, &score1Rect);
+    SDL_RenderCopy(renderer, score1Texture, nullptr, &score1Rect);
 
-    // Render player 2 info
     std::string player2Text = "Player 2";
     SDL_Surface* player2Surface = TTF_RenderText_Solid(font, player2Text.c_str(), white);
     SDL_Texture* player2Texture = SDL_CreateTextureFromSurface(renderer, player2Surface);
@@ -835,7 +847,7 @@ void SurvivalGame::RenderGameOverScreen() {
         SCREEN_HEIGHT / 2 + 12,
         player2Surface->w, player2Surface->h
     };
-    SDL_RenderCopy(renderer, player2Texture, NULL, &player2Rect);
+    SDL_RenderCopy(renderer, player2Texture, nullptr, &player2Rect);
 
     std::string score2Text = "Score: " + std::to_string(player2Info.score);
     SDL_Surface* score2Surface = TTF_RenderText_Solid(font, score2Text.c_str(), white);
@@ -845,9 +857,8 @@ void SurvivalGame::RenderGameOverScreen() {
         player2Rect.y + player2Surface->h - 15,
         score2Surface->w, score2Surface->h
     };
-    SDL_RenderCopy(renderer, score2Texture, NULL, &score2Rect);
+    SDL_RenderCopy(renderer, score2Texture, nullptr, &score2Rect);
 
-    // Render total score
     std::string totalScoreText = "Total Score: " + std::to_string(totalScore);
     SDL_Surface* totalScoreSurface = TTF_RenderText_Solid(font, totalScoreText.c_str(), white);
     SDL_Texture* totalScoreTexture = SDL_CreateTextureFromSurface(renderer, totalScoreSurface);
@@ -856,9 +867,8 @@ void SurvivalGame::RenderGameOverScreen() {
         SCREEN_HEIGHT / 2 + 100,
         totalScoreSurface->w, totalScoreSurface->h
     };
-    SDL_RenderCopy(renderer, totalScoreTexture, NULL, &totalScoreRect);
+    SDL_RenderCopy(renderer, totalScoreTexture, nullptr, &totalScoreRect);
 
-    // Render play time
     std::string timeText = "Play Time: " + std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds);
     SDL_Surface* timeSurface = TTF_RenderText_Solid(font, timeText.c_str(), white);
     SDL_Texture* timeTexture = SDL_CreateTextureFromSurface(renderer, timeSurface);
@@ -867,9 +877,8 @@ void SurvivalGame::RenderGameOverScreen() {
         SCREEN_HEIGHT / 2 + 150,
         timeSurface->w, timeSurface->h
     };
-    SDL_RenderCopy(renderer, timeTexture, NULL, &timeRect);
+    SDL_RenderCopy(renderer, timeTexture, nullptr, &timeRect);
 
-    // Render high score
     std::string highScoreText = "High Score: " + std::to_string(highScore);
     SDL_Surface* highScoreSurface = TTF_RenderText_Solid(font, highScoreText.c_str(), yellow);
     SDL_Texture* highScoreTexture = SDL_CreateTextureFromSurface(renderer, highScoreSurface);
@@ -878,9 +887,8 @@ void SurvivalGame::RenderGameOverScreen() {
         SCREEN_HEIGHT / 2 + 200,
         highScoreSurface->w, highScoreSurface->h
     };
-    SDL_RenderCopy(renderer, highScoreTexture, NULL, &highScoreRect);
+    SDL_RenderCopy(renderer, highScoreTexture, nullptr, &highScoreRect);
 
-    // Clean up surfaces and textures
     SDL_FreeSurface(player1Surface);
     SDL_DestroyTexture(player1Texture);
     SDL_FreeSurface(score1Surface);
@@ -898,105 +906,36 @@ void SurvivalGame::RenderGameOverScreen() {
 }
 
 void SurvivalGame::Cleanup() {
-    // Giải phóng tất cả texture
-    if (playerTexture) {
-        SDL_DestroyTexture(playerTexture);
-        playerTexture = nullptr;
-    }
-    if (player2Texture) {
-        SDL_DestroyTexture(player2Texture);
-        player2Texture = nullptr;
-    }
-    if (bulletTexture) {
-        SDL_DestroyTexture(bulletTexture);
-        bulletTexture = nullptr;
-    }
-    if (backgroundTexture) {
-        SDL_DestroyTexture(backgroundTexture);
-        backgroundTexture = nullptr;
-    }
-    if (grassTexture) {
-        SDL_DestroyTexture(grassTexture);
-        grassTexture = nullptr;
-    }
-    if (enemyTexture) {
-        SDL_DestroyTexture(enemyTexture);
-        enemyTexture = nullptr;
-    }
-    if (boomTexture) {
-        SDL_DestroyTexture(boomTexture);
-        boomTexture = nullptr;
-    }
-    if (afterBoomTexture) {
-        SDL_DestroyTexture(afterBoomTexture);
-        afterBoomTexture = nullptr;
-    }
-    if (shieldTexture) {
-        SDL_DestroyTexture(shieldTexture);
-        shieldTexture = nullptr;
-    }
-    if (gameOverBackgroundTexture) {
-        SDL_DestroyTexture(gameOverBackgroundTexture);
-        gameOverBackgroundTexture = nullptr;
-    }
-    if (pauseTexture) {
-        SDL_DestroyTexture(pauseTexture);
-        pauseTexture = nullptr;
-    }
-    if (menuButtonTexture) {
-        SDL_DestroyTexture(menuButtonTexture);
-        menuButtonTexture = nullptr;
-    }
-
-    // Giải phóng texture của player info
-    if (player1Info.avatar) {
-        SDL_DestroyTexture(player1Info.avatar);
-        player1Info.avatar = nullptr;
-    }
-    if (player2Info.avatar) {
-        SDL_DestroyTexture(player2Info.avatar);
-        player2Info.avatar = nullptr;
-    }
-    if (player1Info.heartTexture) {
-        SDL_DestroyTexture(player1Info.heartTexture);
-        player1Info.heartTexture = nullptr;
-    }
-
-    // Giải phóng bullet icons
-    if (player1BulletInfo.bulletIcon) {
+    if (player1BulletInfo.bulletIcon && player1BulletInfo.bulletIcon == player2BulletInfo.bulletIcon) {
         SDL_DestroyTexture(player1BulletInfo.bulletIcon);
         player1BulletInfo.bulletIcon = nullptr;
+        player2BulletInfo.bulletIcon = nullptr;
     }
-    // Không cần giải phóng player2BulletInfo.bulletIcon vì nó chia sẻ cùng texture với player1
-
-    // Giải phóng âm thanh
-    if (enemyDeathSound) {
-        Mix_FreeChunk(enemyDeathSound);
-        enemyDeathSound = nullptr;
-    }
-    if (playerDeathSound) {
-        Mix_FreeChunk(playerDeathSound);
-        playerDeathSound = nullptr;
-    }
-    if (spawnSound) {
-        Mix_FreeChunk(spawnSound);
-        spawnSound = nullptr;
+    if (player1Info.heartTexture && player1Info.heartTexture == player2Info.heartTexture) {
+        SDL_DestroyTexture(player1Info.heartTexture);
+        player1Info.heartTexture = nullptr;
+        player2Info.heartTexture = nullptr;
     }
 
-    // Giải phóng nhạc nền
-    if (backgroundMusic) {
-        Mix_FreeMusic(backgroundMusic);
-        backgroundMusic = nullptr;
-    }
+    if (player1Info.avatar) SDL_DestroyTexture(player1Info.avatar);
+    if (player2Info.avatar) SDL_DestroyTexture(player2Info.avatar);
+    if (playerTexture) SDL_DestroyTexture(playerTexture);
+    if (player2Texture) SDL_DestroyTexture(player2Texture);
+    if (bulletTexture) SDL_DestroyTexture(bulletTexture);
+    if (backgroundTexture) SDL_DestroyTexture(backgroundTexture);
+    if (grassTexture) SDL_DestroyTexture(grassTexture);
+    if (enemyTexture) SDL_DestroyTexture(enemyTexture);
+    if (boomTexture) SDL_DestroyTexture(boomTexture);
+    if (afterBoomTexture) SDL_DestroyTexture(afterBoomTexture);
+    if (shieldTexture) SDL_DestroyTexture(shieldTexture);
+    if (gameOverBackgroundTexture) SDL_DestroyTexture(gameOverBackgroundTexture);
+    if (pauseTexture) SDL_DestroyTexture(pauseTexture);
+    if (menuButtonTexture) SDL_DestroyTexture(menuButtonTexture);
 
-    // Xóa các vector
-    bullets.clear();
-    enemies.clear();
-    explosions.clear();
-    afterBoomMarks.clear();
+    if (enemyDeathSound) Mix_FreeChunk(enemyDeathSound);
+    if (playerDeathSound) Mix_FreeChunk(playerDeathSound);
+    if (spawnSound) Mix_FreeChunk(spawnSound);
+    if (backgroundMusic) Mix_FreeMusic(backgroundMusic);
 
-    // Reset các biến quan trọng
     isRunning = false;
-    isPaused = false;
-    showGameOverScreen = false;
 }

@@ -34,8 +34,6 @@
 		</Compiler>
 		<Unit filename="campaign_game.cpp" />
 		<Unit filename="campaign_game.h" />
-		<Unit filename="campaign_mode.cpp" />
-		<Unit filename="campaign_mode.h" />
 		<Unit filename="game.cpp" />
 		<Unit filename="game.h" />
 		<Unit filename="main.cpp" />

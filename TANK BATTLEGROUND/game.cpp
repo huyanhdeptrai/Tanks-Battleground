@@ -165,6 +165,7 @@ void Game::HandleEvents() {
             isRunning = false;
         }
 
+        // Nếu đang trong game thì chuyển sự kiện cho game xử lý
         if (currentState == CAMPAIGN_GAME && campaignGame) {
             campaignGame->HandleInput();
             continue;
@@ -216,6 +217,7 @@ void Game::HandleEvents() {
                     }
                     else if (CheckHover(campaignButton)) {
                         PlayClickSound();
+                        // Khởi tạo campaign game
                         if (!campaignGame) {
                             campaignGame = new CampaignGame(renderer, font);
                             if (!campaignGame->Initialize()) {
@@ -224,11 +226,29 @@ void Game::HandleEvents() {
                                 std::cerr << "Failed to initialize campaign game!" << std::endl;
                             } else {
                                 currentState = CAMPAIGN_GAME;
-                                Mix_HaltMusic();
+                                Mix_HaltMusic(); // Dừng nhạc menu
                             }
                         }
                     }
-                    // Đã xóa phần survival game ở đây
+                    else if (CheckHover(survivalButton)) {
+    PlayClickSound();
+    SurvivalGame* survivalGame = new SurvivalGame(renderer, font);
+    if (!survivalGame->Initialize()) {
+        delete survivalGame;
+        std::cerr << "Failed to initialize survival game!" << std::endl;
+    } else {
+        currentState = SURVIVAL_GAME;
+        Mix_HaltMusic();
+
+        // Chạy game survival
+        survivalGame->Run();
+
+        // Khi game kết thúc
+        delete survivalGame;
+        currentState = MAIN_MENU;
+        Mix_PlayMusic(backgroundMusic, -1);
+    }
+}
                 }
             }
             else if (currentState == HELP) {
