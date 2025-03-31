@@ -65,14 +65,24 @@ private:
     SDL_Rect backButton;
 
     // Options sliders
-    SDL_Rect volumeSlider;
     SDL_Rect volumeTrack;
     SDL_Rect brightnessSlider;
     SDL_Rect brightnessTrack;
+    SDL_Rect volumeSlider;
+    SDL_Rect sfxVolumeSlider, sfxVolumeTrack;  // Đổi từ brightnessSlider/Track
     float volumeLevel;
-    float brightnessLevel;
+    float sfxVolumeLevel;  // Đổi từ brightnessLevel
     bool draggingVolume;
-    bool draggingBrightness;
+    bool draggingSFXVolume;  // Đổi từ draggingBrightness
+
+    // Thêm vào các biến thành viên
+    SDL_Texture* helpPage1;
+    SDL_Texture* helpPage2;
+    SDL_Texture* helpPage3;
+    int currentHelpPage;
+
+    SDL_Rect nextPageButton;
+    SDL_Rect prevPageButton;
 
     // Mode selection buttons
     SDL_Rect campaignButton;
@@ -80,6 +90,7 @@ private:
 
     // Campaign game instance
     CampaignGame* campaignGame;  // Thêm con trỏ đến campaign game
+    SurvivalGame* survivalGame;  // Thêm dòng này
 };
 
 #endif // GAME_H

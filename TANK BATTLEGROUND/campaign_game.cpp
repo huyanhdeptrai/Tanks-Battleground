@@ -36,7 +36,7 @@ CampaignGame::CampaignGame(SDL_Renderer* rend, TTF_Font* fnt)
       portalStartTexture(nullptr), portalEndTexture(nullptr), bossTexture(nullptr), isPaused(false),
       highScore(0), showGameOverScreen(false), endGameTime(0), gameOverBackgroundTexture(nullptr),
       backgroundMusic(nullptr), pauseTexture(nullptr), menuButtonTexture(nullptr),
-      musicVolume(80), sfxVolume(80),
+      musicVolume(64), sfxVolume(64),
       musicSlider{SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 - 40, 300, 30},
       sfxSlider{SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 + 40, 300, 30},
       isDraggingMusic(false), isDraggingSFX(false),
@@ -71,6 +71,8 @@ void CampaignGame::Run() {
 
 void CampaignGame::Cleanup() {
     closeSDL();
+    SDL_DestroyTexture(restartButtonTexture);
+    SDL_DestroyTexture(menuButtonTexture);
 }
 
 CampaignGame::~CampaignGame() {
@@ -128,6 +130,8 @@ void CampaignGame::loadResources() {
     bossTexture = loadTexture("images/CampaignMode/boss.png");
     gameOverBackgroundTexture = loadTexture("images/CampaignMode/gameover_background.png");
     pauseTexture = loadTexture("images/CampaignMode/pause.png");
+    menuButtonTexture = loadTexture("images/CampaignMode/menu_button.png");
+    restartButtonTexture = loadTexture("images/CampaignMode/restart_button.png");
     menuButtonTexture = loadTexture("images/CampaignMode/menu_button.png");
 
     player1Info.avatar = loadTexture("images/CampaignMode/player1_avatar.png");
@@ -243,6 +247,11 @@ void CampaignGame::updateEnemies() {
             continue;
         }
 
+        // Thêm điều kiện kiểm tra nếu kim cương đang ở trên đất
+        if (diamondState == DIAMOND_ON_GROUND) {
+            checkEnemyDiamondCollision(enemy.get());
+        }
+
         if (diamondState == DIAMOND_WITH_ENEMY && enemy->id == diamondCarrierID) {
             float currentSpeed = ENEMY_BOOSTED_SPEED;
             float targetX = SCREEN_WIDTH / 2;
@@ -352,6 +361,32 @@ void CampaignGame::checkDiamondCollision(float x, float y, int width, int height
     }
 }
 
+void CampaignGame::checkEnemyDiamondCollision(Enemy* enemy) {
+    if (diamondState != DIAMOND_ON_GROUND) return;
+
+    float enemySize = (dynamic_cast<Boss*>(enemy) ? BOSS_SIZE : ENEMY_SIZE);
+    float enemyCenterX = enemy->x + enemySize / 2;
+    float enemyCenterY = enemy->y + enemySize / 2;
+
+    float diamondCenterX = diamondX + DIAMOND_SIZE / 2;
+    float diamondCenterY = diamondY + DIAMOND_SIZE / 2;
+
+    float dx = enemyCenterX - diamondCenterX;
+    float dy = enemyCenterY - diamondCenterY;
+    float distance = std::sqrt(dx * dx + dy * dy);
+
+    if (distance < (enemySize / 2 + DIAMOND_SIZE / 2)) {
+        diamondState = DIAMOND_WITH_ENEMY;
+        diamondCarrierID = enemy->id;
+        Mix_PlayChannel(-1, spawnSound, 0);
+
+        // Tăng máu cho boss nếu nhặt được kim cương
+        if (dynamic_cast<Boss*>(enemy)) {
+            enemy->health += 20;
+        }
+    }
+}
+
 void CampaignGame::updateDiamond() {
     switch (diamondState) {
         case DIAMOND_WITH_PLAYER1:
@@ -391,12 +426,12 @@ void CampaignGame::checkBulletCollisions() {
                     if (isPlayer1Bullet) player1Info.score += (*enemyIt)->getScoreValue();
                     else player2Info.score += (*enemyIt)->getScoreValue();
 
-                    if (diamondState == DIAMOND_WITH_ENEMY && (*enemyIt)->id == diamondCarrierID) {
-                        diamondState = DIAMOND_ON_GROUND;
-                        diamondX = enemyCenterX - DIAMOND_SIZE / 2;
-                        diamondY = enemyCenterY - DIAMOND_SIZE / 2;
-                        diamondCarrierID = -1;
-                    }
+                if (diamondState == DIAMOND_WITH_ENEMY && (*enemyIt)->id == diamondCarrierID) {
+                    diamondState = DIAMOND_ON_GROUND;
+                    diamondX = enemyCenterX - DIAMOND_SIZE / 2;
+                    diamondY = enemyCenterY - DIAMOND_SIZE / 2;
+                    diamondCarrierID = -1;
+                }
 
                     explosions.emplace_back(enemyCenterX, enemyCenterY);
                     afterBoomMarks.emplace_back(enemyCenterX, enemyCenterY);
@@ -809,21 +844,11 @@ void CampaignGame::handleGameOverInput() {
         }
         if (e.type == SDL_MOUSEBUTTONDOWN) {
             SDL_GetMouseState(&mouseX, &mouseY);
-            // Tọa độ và kích thước nút Restart (khớp với renderGameOverScreen)
-            int restartButtonX = BUTTON_WIDTH - 5;
-            int restartButtonY = SCREEN_HEIGHT / 2 + 280;
-            int restartButtonW = BUTTON_WIDTH + 190;
-            int restartButtonH = BUTTON_HEIGHT + 30;
 
-            // Tọa độ và kích thước nút Menu (khớp với renderGameOverScreen)
-            int menuButtonX = SCREEN_WIDTH / 2 + 15;
-            int menuButtonY = SCREEN_HEIGHT / 2 + 280;
-            int menuButtonW = BUTTON_WIDTH + 190;
-            int menuButtonH = BUTTON_HEIGHT + 30;
-
-            // Kiểm tra nút Restart
-            if (isMouseOverButton(mouseX, mouseY, restartButtonX, restartButtonY, restartButtonW, restartButtonH)) {
-                // Reset game
+            // Kiểm tra nút Restart (X: 95, Y: 680, W: 285, H: 80)
+            if (mouseX >= 95 && mouseX <= 95 + 285 &&
+                mouseY >= 680 && mouseY <= 680 + 80) {
+                // Reset game state
                 showGameOverScreen = false;
                 gameEnded = false;
                 player1 = Player(PLAY_AREA_MIN_X + PLAYER_OFFSET, SCREEN_HEIGHT / 2, 0);
@@ -846,41 +871,32 @@ void CampaignGame::handleGameOverInput() {
                 player2IsInvincible = false;
                 player1InvincibleStart = 0;
                 player2InvincibleStart = 0;
-                std::cout << "Restart button clicked!" << std::endl; // Debug
             }
-            // Kiểm tra nút Menu
-            if (isMouseOverButton(mouseX, mouseY, menuButtonX, menuButtonY, menuButtonW, menuButtonH)) {
-                // Quay về menu (ở đây chỉ thoát game vì chưa có menu chính)
+            // Kiểm tra nút Menu (X: 420, Y: 680, W: 285, H: 80)
+            else if (mouseX >= 420 && mouseX <= 420 + 285 &&
+                     mouseY >= 680 && mouseY <= 680 + 80) {
+                // Thoát về menu chính
                 running = false;
-                std::cout << "Menu button clicked!" << std::endl; // Debug
             }
         }
     }
-}
-
-bool CampaignGame::isGameOver() {
-    bool gameIsOver = gameEnded || (!player1.isAlive && !player2.isAlive);
-    if (gameIsOver && !showGameOverScreen) {
-        showGameOverScreen = true;
-        endGameTime = SDL_GetTicks() - startTime;
-        int totalScore = player1Info.score + player2Info.score;
-        if (totalScore > highScore) highScore = totalScore;
-    }
-    return gameIsOver;
 }
 
 void CampaignGame::renderGameOverScreen() {
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color yellow = {255, 255, 0, 255};
 
+    // Render background
     SDL_Rect backgroundRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
     SDL_RenderCopy(renderer, gameOverBackgroundTexture, NULL, &backgroundRect);
 
+    // Tính toán thời gian chơi
     int totalScore = player1Info.score + player2Info.score;
     Uint32 playTime = endGameTime / 1000;
     int minutes = playTime / 60;
     int seconds = playTime % 60;
 
+    // Render thông tin người chơi 1
     std::string player1Text = "Player 1";
     SDL_Surface* player1Surface = TTF_RenderText_Solid(font, player1Text.c_str(), white);
     SDL_Texture* player1Texture = SDL_CreateTextureFromSurface(renderer, player1Surface);
@@ -895,6 +911,7 @@ void CampaignGame::renderGameOverScreen() {
                            score1Surface->w, score1Surface->h};
     SDL_RenderCopy(renderer, score1Texture, NULL, &score1Rect);
 
+    // Render thông tin người chơi 2
     std::string player2Text = "Player 2";
     SDL_Surface* player2Surface = TTF_RenderText_Solid(font, player2Text.c_str(), white);
     SDL_Texture* player2Texture = SDL_CreateTextureFromSurface(renderer, player2Surface);
@@ -909,6 +926,7 @@ void CampaignGame::renderGameOverScreen() {
                            score2Surface->w, score2Surface->h};
     SDL_RenderCopy(renderer, score2Texture, NULL, &score2Rect);
 
+    // Render tổng điểm
     std::string totalScoreText = "Total Score: " + std::to_string(totalScore);
     SDL_Surface* totalScoreSurface = TTF_RenderText_Solid(font, totalScoreText.c_str(), white);
     SDL_Texture* totalScoreTexture = SDL_CreateTextureFromSurface(renderer, totalScoreSurface);
@@ -916,6 +934,7 @@ void CampaignGame::renderGameOverScreen() {
                                totalScoreSurface->w, totalScoreSurface->h};
     SDL_RenderCopy(renderer, totalScoreTexture, NULL, &totalScoreRect);
 
+    // Render thời gian chơi
     std::string timeText = "Play Time: " + std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds);
     SDL_Surface* timeSurface = TTF_RenderText_Solid(font, timeText.c_str(), white);
     SDL_Texture* timeTexture = SDL_CreateTextureFromSurface(renderer, timeSurface);
@@ -923,6 +942,7 @@ void CampaignGame::renderGameOverScreen() {
                          timeSurface->w, timeSurface->h};
     SDL_RenderCopy(renderer, timeTexture, NULL, &timeRect);
 
+    // Render high score
     std::string highScoreText = "High Score: " + std::to_string(highScore);
     SDL_Surface* highScoreSurface = TTF_RenderText_Solid(font, highScoreText.c_str(), yellow);
     SDL_Texture* highScoreTexture = SDL_CreateTextureFromSurface(renderer, highScoreSurface);
@@ -930,6 +950,15 @@ void CampaignGame::renderGameOverScreen() {
                               highScoreSurface->w, highScoreSurface->h};
     SDL_RenderCopy(renderer, highScoreTexture, NULL, &highScoreRect);
 
+    // Render nút Restart
+    restartButtonRect = {SCREEN_WIDTH / 2 - BUTTON_WIDTH - 50, SCREEN_HEIGHT / 2 + 280, BUTTON_WIDTH, BUTTON_HEIGHT};
+    SDL_RenderCopy(renderer, restartButtonTexture, NULL, &restartButtonRect);
+
+    // Render nút Menu
+    menuButtonRect = {SCREEN_WIDTH / 2 + 50, SCREEN_HEIGHT / 2 + 280, BUTTON_WIDTH, BUTTON_HEIGHT};
+    SDL_RenderCopy(renderer, menuButtonTexture, NULL, &menuButtonRect);
+
+    // Giải phóng bộ nhớ
     SDL_FreeSurface(player1Surface);
     SDL_DestroyTexture(player1Texture);
     SDL_FreeSurface(score1Surface);
@@ -944,6 +973,17 @@ void CampaignGame::renderGameOverScreen() {
     SDL_DestroyTexture(timeTexture);
     SDL_FreeSurface(highScoreSurface);
     SDL_DestroyTexture(highScoreTexture);
+}
+
+bool CampaignGame::isGameOver() {
+    bool gameIsOver = gameEnded || (!player1.isAlive && !player2.isAlive);
+    if (gameIsOver && !showGameOverScreen) {
+        showGameOverScreen = true;
+        endGameTime = SDL_GetTicks() - startTime;
+        int totalScore = player1Info.score + player2Info.score;
+        if (totalScore > highScore) highScore = totalScore;
+    }
+    return gameIsOver;
 }
 
 void CampaignGame::Update() {
@@ -1060,14 +1100,6 @@ void CampaignGame::Render() {
 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 SDL_RenderDrawRect(renderer, &musicSlider);
 SDL_RenderDrawRect(renderer, &sfxSlider);
-
-// Thêm text "PAUSED"
-SDL_Color red = {255, 0, 0, 255};
-std::string pausedText = "PAUSED";
-SDL_Surface* pausedSurface = TTF_RenderText_Solid(font, pausedText.c_str(), red);
-SDL_Texture* pausedTexture = SDL_CreateTextureFromSurface(renderer, pausedSurface);
-SDL_Rect pausedRect = {SCREEN_WIDTH/2 - pausedSurface->w/2, musicSlider.y - 100, pausedSurface->w, pausedSurface->h};
-SDL_RenderCopy(renderer, pausedTexture, NULL, &pausedRect);
 
             SDL_Color white = {255, 255, 255, 255};
             std::string musicText = "Music Volume";

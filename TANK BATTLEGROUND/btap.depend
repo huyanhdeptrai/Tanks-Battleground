@@ -66,11 +66,11 @@
 1743353025 source:c:\users\huy anh\documents\btap classic mode\main.cpp
 	"game.h"
 
-1743428062 source:c:\users\huy anh\documents\ltnc\game.cpp
+1743453889 source:c:\users\huy anh\documents\ltnc\game.cpp
 	"game.h"
 	<iostream>
 
-1743398853 c:\users\huy anh\documents\ltnc\game.h
+1743453889 c:\users\huy anh\documents\ltnc\game.h
 	<SDL.h>
 	<SDL_ttf.h>
 	<SDL_image.h>
@@ -84,7 +84,7 @@
 
 1743389609 source:c:\users\huy anh\documents\ltnc\campaign_mode.cpp
 
-1743428062 c:\users\huy anh\documents\ltnc\campaign_game.h
+1743448315 c:\users\huy anh\documents\ltnc\campaign_game.h
 	<SDL.h>
 	<SDL_image.h>
 	<SDL_mixer.h>
@@ -95,7 +95,7 @@
 	<cmath>
 	<iostream>
 
-1743431192 source:c:\users\huy anh\documents\ltnc\campaign_game.cpp
+1743452794 source:c:\users\huy anh\documents\ltnc\campaign_game.cpp
 	"campaign_game.h"
 
 1743425962 c:\users\huy anh\documents\ltnc\survival_game.h

@@ -7,25 +7,28 @@ Game::Game() : window(nullptr), renderer(nullptr), font(nullptr),
                helpBackground(nullptr),
                backgroundMusic(nullptr), clickSound(nullptr),
                isRunning(false), currentState(MAIN_MENU),
-               volumeLevel(0.8f), brightnessLevel(0.7f),
-               draggingVolume(false), draggingBrightness(false),
-               campaignGame(nullptr) {
+               volumeLevel(0.8f), sfxVolumeLevel(0.7f), // Đổi từ brightnessLevel
+               draggingVolume(false), draggingSFXVolume(false), // Đổi từ draggingBrightness
+               campaignGame(nullptr), currentHelpPage(1),
+nextPageButton{665, 685, 101, 78},
+prevPageButton{667, 580, 101, 83} {
 
-    // Main menu buttons
+    // Nút menu chính
     playButton = {250, 350, 300, 80};
     optionsButton = {250, 460, 300, 80};
     helpButton = {250, 570, 300, 80};
     quitButton = {250, 680, 300, 80};
     backButton = {50, 50, 100, 50};
 
-    // Options sliders
-    CreateSlider(volumeSlider, volumeTrack, 200, 300, 400);
-    CreateSlider(brightnessSlider, brightnessTrack, 200, 400, 400);
+    // Thanh trượt option
+    CreateSlider(volumeSlider, volumeTrack, 200, 350, 400);
+    CreateSlider(sfxVolumeSlider, sfxVolumeTrack, 200, 450, 400); // Đổi từ brightnessSlider/Track
 
-    // Mode selection buttons
+    // Nút chọn chế độ
     campaignButton = {250, 335, 300, 80};
     survivalButton = {250, 500, 300, 80};
 }
+
 
 void Game::CreateSlider(SDL_Rect& slider, SDL_Rect& track, int x, int y, int width) {
     track = {x, y, width, 20};
@@ -75,6 +78,15 @@ bool Game::Initialize(const char* title, int width, int height) {
         return false;
     }
 
+    helpPage1 = LoadTexture("images/page1.png");
+helpPage2 = LoadTexture("images/page2.png");
+helpPage3 = LoadTexture("images/page3.png");
+
+if (!helpPage1 || !helpPage2 || !helpPage3) {
+    std::cerr << "Failed to load help pages! Error: " << IMG_GetError() << std::endl;
+    return false;
+}
+
     int imgFlags = IMG_INIT_PNG;
     if (!(IMG_Init(imgFlags) & imgFlags)) {
         std::cerr << "SDL_image could not initialize! Error: " << IMG_GetError() << std::endl;
@@ -120,7 +132,7 @@ bool Game::Initialize(const char* title, int width, int height) {
         return false;
     }
 
-    Mix_PlayMusic(backgroundMusic, -1);
+    //Mix_PlayMusic(backgroundMusic, -1);
     Mix_VolumeMusic(static_cast<int>(volumeLevel * MIX_MAX_VOLUME));
 
     isRunning = true;
@@ -150,6 +162,7 @@ SDL_Texture* Game::LoadTexture(const std::string& filePath) {
 }
 
 void Game::Run() {
+    Mix_PlayMusic(backgroundMusic, -1);
     while (isRunning) {
         HandleEvents();
         Update();
@@ -204,8 +217,8 @@ void Game::HandleEvents() {
                     else if (CheckHover(volumeSlider)) {
                         draggingVolume = true;
                     }
-                    else if (CheckHover(brightnessSlider)) {
-                        draggingBrightness = true;
+                    else if (CheckHover(sfxVolumeSlider)) {  // Đổi từ brightnessSlider
+                        draggingSFXVolume = true;  // Đổi từ draggingBrightness
                     }
                 }
             }
@@ -217,7 +230,6 @@ void Game::HandleEvents() {
                     }
                     else if (CheckHover(campaignButton)) {
                         PlayClickSound();
-                        // Khởi tạo campaign game
                         if (!campaignGame) {
                             campaignGame = new CampaignGame(renderer, font);
                             if (!campaignGame->Initialize()) {
@@ -226,43 +238,56 @@ void Game::HandleEvents() {
                                 std::cerr << "Failed to initialize campaign game!" << std::endl;
                             } else {
                                 currentState = CAMPAIGN_GAME;
-                                Mix_HaltMusic(); // Dừng nhạc menu
                             }
                         }
                     }
                     else if (CheckHover(survivalButton)) {
-    PlayClickSound();
-    SurvivalGame* survivalGame = new SurvivalGame(renderer, font);
-    if (!survivalGame->Initialize()) {
-        delete survivalGame;
-        std::cerr << "Failed to initialize survival game!" << std::endl;
-    } else {
-        currentState = SURVIVAL_GAME;
-        Mix_HaltMusic();
-
-        // Chạy game survival
-        survivalGame->Run();
-
-        // Khi game kết thúc
-        delete survivalGame;
-        currentState = MAIN_MENU;
-        Mix_PlayMusic(backgroundMusic, -1);
-    }
-}
-                }
-            }
-            else if (currentState == HELP) {
-                if (event.button.button == SDL_BUTTON_LEFT) {
-                    if (CheckHover(backButton)) {
                         PlayClickSound();
-                        currentState = MAIN_MENU;
+                        SurvivalGame* survivalGame = new SurvivalGame(renderer, font);
+                        if (!survivalGame->Initialize()) {
+                            delete survivalGame;
+                            std::cerr << "Failed to initialize survival game!" << std::endl;
+                        } else {
+                            currentState = SURVIVAL_GAME;
+                            survivalGame->Run();
+                            delete survivalGame;
+                            currentState = MAIN_MENU;
+                            Mix_PlayMusic(backgroundMusic, -1);
+                        }
                     }
                 }
             }
+            else if (currentState == HELP) {
+    if (event.button.button == SDL_BUTTON_LEFT) {
+        if (CheckHover(backButton)) {
+            PlayClickSound();
+            currentState = MAIN_MENU;
+            currentHelpPage = 1; // Reset về trang đầu khi quay lại menu
+        }
+        else if (currentHelpPage == 1 && CheckHover(nextPageButton)) {
+            PlayClickSound();
+            currentHelpPage = 2;
+        }
+        else if (currentHelpPage == 2) {
+            if (CheckHover(nextPageButton)) {
+                PlayClickSound();
+                currentHelpPage = 3;
+            }
+            else if (CheckHover(prevPageButton)) {
+                PlayClickSound();
+                currentHelpPage = 1;
+            }
+        }
+        else if (currentHelpPage == 3 && CheckHover(prevPageButton)) {
+            PlayClickSound();
+            currentHelpPage = 2;
+        }
+    }
+}
         }
         else if (event.type == SDL_MOUSEBUTTONUP) {
             draggingVolume = false;
-            draggingBrightness = false;
+            draggingSFXVolume = false;  // Đổi từ draggingBrightness
         }
         else if (event.type == SDL_MOUSEMOTION) {
             if (draggingVolume) {
@@ -271,10 +296,11 @@ void Game::HandleEvents() {
                 UpdateSlider(mouseX, volumeSlider, volumeTrack, volumeLevel);
                 Mix_VolumeMusic(static_cast<int>(volumeLevel * MIX_MAX_VOLUME));
             }
-            else if (draggingBrightness) {
+            else if (draggingSFXVolume) {  // Đổi từ draggingBrightness
                 int mouseX, mouseY;
                 SDL_GetMouseState(&mouseX, &mouseY);
-                UpdateSlider(mouseX, brightnessSlider, brightnessTrack, brightnessLevel);
+                UpdateSlider(mouseX, sfxVolumeSlider, sfxVolumeTrack, sfxVolumeLevel);  // Đổi từ brightnessSlider/Track/Level
+                Mix_Volume(-1, static_cast<int>(sfxVolumeLevel * MIX_MAX_VOLUME));  // Cập nhật volume SFX
             }
         }
     }
@@ -326,31 +352,35 @@ void Game::RenderMainMenu() {
 void Game::RenderOptions() {
     SDL_RenderCopy(renderer, optionsBackground, nullptr, nullptr);
 
-    // Ẩn nút Back, chỉ giữ vùng click
+    // Thanh trượt âm lượng nhạc
     SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
     SDL_RenderFillRect(renderer, &volumeTrack);
     SDL_SetRenderDrawColor(renderer, 0, 200, 0, 255);
     SDL_RenderFillRect(renderer, &volumeSlider);
 
+    // Thanh trượt âm lượng SFX (đổi từ brightness)
     SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
-    SDL_RenderFillRect(renderer, &brightnessTrack);
+    SDL_RenderFillRect(renderer, &sfxVolumeTrack);
     SDL_SetRenderDrawColor(renderer, 0, 200, 0, 255);
-    SDL_RenderFillRect(renderer, &brightnessSlider);
+    SDL_RenderFillRect(renderer, &sfxVolumeSlider);
 
     SDL_Color white = {255, 255, 255, 255};
-    SDL_Surface* volumeSurface = TTF_RenderText_Solid(font, "Volume", white);
+
+    // Nhãn âm lượng nhạc
+    SDL_Surface* volumeSurface = TTF_RenderText_Solid(font, "Background volume", white);
     SDL_Texture* volumeTexture = SDL_CreateTextureFromSurface(renderer, volumeSurface);
-    SDL_Rect volumeTextRect = {volumeTrack.x, volumeTrack.y - 30, volumeSurface->w, volumeSurface->h};
+    SDL_Rect volumeTextRect = {volumeTrack.x, volumeTrack.y - 50, volumeSurface->w, volumeSurface->h};
     SDL_RenderCopy(renderer, volumeTexture, nullptr, &volumeTextRect);
     SDL_FreeSurface(volumeSurface);
     SDL_DestroyTexture(volumeTexture);
 
-    SDL_Surface* brightnessSurface = TTF_RenderText_Solid(font, "Brightness", white);
-    SDL_Texture* brightnessTexture = SDL_CreateTextureFromSurface(renderer, brightnessSurface);
-    SDL_Rect brightnessTextRect = {brightnessTrack.x, brightnessTrack.y - 30, brightnessSurface->w, brightnessSurface->h};
-    SDL_RenderCopy(renderer, brightnessTexture, nullptr, &brightnessTextRect);
-    SDL_FreeSurface(brightnessSurface);
-    SDL_DestroyTexture(brightnessTexture);
+    // Nhãn âm lượng SFX (đổi từ brightness)
+    SDL_Surface* sfxSurface = TTF_RenderText_Solid(font, "SFX volume", white);
+    SDL_Texture* sfxTexture = SDL_CreateTextureFromSurface(renderer, sfxSurface);
+    SDL_Rect sfxTextRect = {sfxVolumeTrack.x, sfxVolumeTrack.y - 50, sfxSurface->w, sfxSurface->h};
+    SDL_RenderCopy(renderer, sfxTexture, nullptr, &sfxTextRect);
+    SDL_FreeSurface(sfxSurface);
+    SDL_DestroyTexture(sfxTexture);
 }
 
 void Game::RenderModeSelection() {
@@ -364,13 +394,28 @@ void Game::RenderModeSelection() {
 }
 
 void Game::RenderHelp() {
-    if (helpBackground) {
-        SDL_RenderCopy(renderer, helpBackground, nullptr, nullptr);
+    switch (currentHelpPage) {
+        case 1:
+            SDL_RenderCopy(renderer, helpPage1, nullptr, nullptr);
+            // Chỉ hiển thị nút next ở trang 1
+            break;
+        case 2:
+            SDL_RenderCopy(renderer, helpPage2, nullptr, nullptr);
+            // Hiển thị cả nút next và prev ở trang 2
+            break;
+        case 3:
+            SDL_RenderCopy(renderer, helpPage3, nullptr, nullptr);
+            // Chỉ hiển thị nút prev ở trang 3
+            break;
     }
-    else {
-        SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);
-        SDL_RenderFillRect(renderer, nullptr);
-    }
+
+    // Luôn hiển thị nút back
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Surface* backSurface = TTF_RenderText_Solid(font, "Back", white);
+    SDL_Texture* backTexture = SDL_CreateTextureFromSurface(renderer, backSurface);
+    SDL_RenderCopy(renderer, backTexture, nullptr, &backButton);
+    SDL_FreeSurface(backSurface);
+    SDL_DestroyTexture(backTexture);
 }
 
 void Game::RenderCampaignGame() {
@@ -426,6 +471,10 @@ void Game::Cleanup() {
     if (window) {
         SDL_DestroyWindow(window);
     }
+
+    if (helpPage1) SDL_DestroyTexture(helpPage1);
+if (helpPage2) SDL_DestroyTexture(helpPage2);
+if (helpPage3) SDL_DestroyTexture(helpPage3);
 
     Mix_CloseAudio();
     IMG_Quit();

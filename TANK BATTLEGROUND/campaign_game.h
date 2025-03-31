@@ -196,6 +196,8 @@ private:
     SDL_Texture* pauseTexture;
     SDL_Rect menuButtonRect;
     SDL_Texture* menuButtonTexture;
+    SDL_Texture* restartButtonTexture;
+    SDL_Rect restartButtonRect;
 
     int musicVolume;
     int sfxVolume;
@@ -241,6 +243,9 @@ private:
     void handleGameOverInput();
     bool isGameOver();
     void renderGameOverScreen();
+    void checkEnemyDiamondCollision(Enemy* enemy);
+    void handleEnemyDiamondPickup(Enemy* enemy);
+    void dropDiamond(float x, float y);
 };
 
 #endif // CAMPAIGN_GAME_H
