@@ -16,5 +16,7 @@ Developed by Ho Sy Huy Anh, an Information Technology student at University of E
 
 ### A Personal Note
 This project represents months of passion and dedication to game development. I'd be thrilled if you enjoy playing it as much as I enjoyed creating it! Your feedback and bug reports are always welcome.
+
 Happy gaming! 🚀💥
+
 "The battlefield awaits your command!"
