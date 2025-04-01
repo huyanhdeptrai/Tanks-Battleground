@@ -1,5 +1,5 @@
-TANKS BATTLEGROUND 🎮⚔️
-An Intense Tactical Shooter Experience!
+#TANKS BATTLEGROUND 🎮⚔️
+##An Intense Tactical Shooter Experience!
 
 About the Game
 Developed by Ho Sy Huy Anh, an Information Technology student at University of Engineering and Technology - Vietnam National University (UET-VNU), this action-packed game combines strategic gameplay with retro-inspired visuals built using C++ & SDL2.
