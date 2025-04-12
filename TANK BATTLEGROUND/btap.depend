@@ -113,3 +113,48 @@
 1743427276 source:c:\users\huy anh\documents\ltnc\survival_game.cpp
 	"survival_game.h"
 
+1743452794 source:c:\users\huy anh\desktop\tanks-battleground\tank battleground\campaign_game.cpp
+	"campaign_game.h"
+
+1743448315 c:\users\huy anh\desktop\tanks-battleground\tank battleground\campaign_game.h
+	<SDL.h>
+	<SDL_image.h>
+	<SDL_mixer.h>
+	<SDL_ttf.h>
+	<vector>
+	<memory>
+	<algorithm>
+	<cmath>
+	<iostream>
+
+1743457850 source:c:\users\huy anh\desktop\tanks-battleground\tank battleground\game.cpp
+	"game.h"
+	<iostream>
+
+1743453889 c:\users\huy anh\desktop\tanks-battleground\tank battleground\game.h
+	<SDL.h>
+	<SDL_ttf.h>
+	<SDL_image.h>
+	<SDL_mixer.h>
+	<string>
+	"campaign_game.h"
+	"survival_game.h"
+
+1743425962 c:\users\huy anh\desktop\tanks-battleground\tank battleground\survival_game.h
+	<SDL.h>
+	<SDL_image.h>
+	<SDL_mixer.h>
+	<SDL_ttf.h>
+	<cmath>
+	<iostream>
+	<vector>
+	<algorithm>
+	<cstdlib>
+	<ctime>
+
+1743392609 source:c:\users\huy anh\desktop\tanks-battleground\tank battleground\main.cpp
+	"game.h"
+
+1743427276 source:c:\users\huy anh\desktop\tanks-battleground\tank battleground\survival_game.cpp
+	"survival_game.h"
+

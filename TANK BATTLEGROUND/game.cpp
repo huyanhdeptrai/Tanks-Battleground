@@ -408,14 +408,6 @@ void Game::RenderHelp() {
             // Chỉ hiển thị nút prev ở trang 3
             break;
     }
-
-    // Luôn hiển thị nút back
-    SDL_Color white = {255, 255, 255, 255};
-    SDL_Surface* backSurface = TTF_RenderText_Solid(font, "Back", white);
-    SDL_Texture* backTexture = SDL_CreateTextureFromSurface(renderer, backSurface);
-    SDL_RenderCopy(renderer, backTexture, nullptr, &backButton);
-    SDL_FreeSurface(backSurface);
-    SDL_DestroyTexture(backTexture);
 }
 
 void Game::RenderCampaignGame() {
